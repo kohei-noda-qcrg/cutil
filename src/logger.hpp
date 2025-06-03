@@ -39,18 +39,6 @@ inline auto logger_print(const Logger& logger, const std::format_string<Args...>
         "DEBUG",
     };
     static_assert(loglevel_str.size() == (int)Loglevel::Limit);
-    constexpr auto colors = std::array{
-        "\x1B[91m", // error: red
-        "\x1B[93m", // warn: yellow
-        "\x1B[0m",  // info: default
-        "\x1B[96m", // debug: cyan
-    };
-    static_assert(colors.size() == (int)Loglevel::Limit);
-
-    const auto time     = std::chrono::system_clock::now() - logger_time_base;
-    const auto minutes  = std::chrono::duration_cast<std::chrono::minutes>(time);
-    const auto seconds  = std::chrono::duration_cast<std::chrono::seconds>(time - minutes);
-    const auto mseconds = std::chrono::duration_cast<std::chrono::milliseconds>(time - minutes - seconds);
 
     const auto     level          = int(loglevel);
     constexpr auto short_filename = cutil_impl::format_file_name<filename>();
@@ -58,16 +46,12 @@ inline auto logger_print(const Logger& logger, const std::format_string<Args...>
 
     stream_lock.lock();
     const auto out = level <= int(Loglevel::Warn) ? stderr : stdout;
-    // time
-    std::print(out, "{}:{:02}:{:03} ", minutes.count(), seconds.count(), mseconds.count());
-    // name
-    std::print(out, "[{}] {}{} ", logger.name, colors[level], loglevel_str[level]);
+    // loglevel
+    std::print(out, "[{}] ", loglevel_str[level]);
     // location
     std::print(out, "{} @ {}:{} ", short_function.str(), short_filename.str(), line);
     // contents
-    std::print(out, format, std::forward<Args>(args)...);
-    // reset color
-    std::println(out, "\x1B[0m");
+    std::println(out, format, std::forward<Args>(args)...);
     stream_lock.unlock();
 }
 
